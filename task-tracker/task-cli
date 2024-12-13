@@ -1,0 +1,165 @@
+#!/usr/bin/python3
+import getopt, sys, json, os, datetime
+
+def get_timestamp():
+    now = datetime.datetime.now()
+    now = now.strftime("%m/%d/%Y %H:%M:%S")
+    return now
+
+def add(arguments):
+    try:
+        new_task = arguments[0]
+    except IndexError:
+        print ("Enter a new task description")
+        return
+    data = init()
+
+    
+    data["last_record"] = data["last_record"] + 1
+    data["tasks"].append({
+        "id": data["last_record"],
+        "description" : new_task,
+        "status" : "pending",
+        "createdAt" : get_timestamp(),
+        "updatedAt" : get_timestamp()
+
+    })
+    
+    update_file(data)
+    print("Added!")
+
+def update(arguments, status=""):
+    try:
+        task_id_input = int(arguments[0])
+    except IndexError:
+        print ("Enter a task id")
+        return
+       
+    data = init()
+
+    # Find the index 
+    
+    
+    for index, task in enumerate(data["tasks"]):               
+        if task["id"] == task_id_input:
+            task_index = task["id"] 
+            match status.lower():
+                case "in-progress":
+                    task["status"] = "in-progress"
+                    task["updatedAt"] = get_timestamp()
+                    print("Updated!")
+                
+                case "done":
+                    task["status"] = "done"
+                    task["updatedAt"] = get_timestamp()
+                    print("Updated!")
+
+                case "delete":
+                    del data["tasks"][index]
+
+                case _:
+                    try:
+                        task_description_input = arguments[1]
+                    except IndexError:
+                        print ("Enter a description")
+                        return    
+                    task["description"] = task_description_input
+                    task["updatedAt"] = get_timestamp()
+                    print("Updated!")          
+           
+      
+    
+
+    
+
+    
+    update_file(data)
+    
+
+def list_task(arguments):
+    data = init()
+    try:
+        filter = arguments[0]
+    except IndexError:
+        filter = "all"
+
+    match filter.lower():
+        case "done":
+            status = "done"
+        case "pending":
+            status = "done"
+        case _:
+            status = "all"
+
+    for task in data["tasks"]:
+        if status == "all":
+            print (f" {task['id']} -- {task['description']} -- {task['status']} -- {task['createdAt']} -- {task['updatedAt']} " )
+        else:
+            if task['status'] == status:
+                print (f" {task['id']} -- {task['description']} -- {task['status']} -- {task['createdAt']} -- {task['updatedAt']} " )
+        
+         
+
+
+def update_file(data):
+    with open("data.json", "w") as outfile:
+        json.dump(data, outfile, skipkeys=True)
+
+def read_file():
+    with open("data.json", "r") as read_file:
+        # json.load()
+        details = json.load(read_file)
+        #details = details["name"]
+    return details
+
+def init():  
+    if os.path.isfile("data.json"):
+        data = read_file()
+    else:
+        default_data = {
+            "name": "task-cli",
+            "creator": "Darvin Basilio",
+            "last_record" : 2,
+            "tasks": [
+                {
+                    "id": 1,
+                    "description" : "This is a sample description",
+                    "status" : "pending",
+                    "createdAt" : '12/01/2024 06:56:06',
+                    "updatedAt" : '12/01/2024 06:56:06'
+
+                },
+                {
+                    "id": 2,
+                    "description" : "This is a second description",
+                    "status" : "pending",
+                    "createdAt" : '12/01/2024 06:56:06',
+                    "updatedAt" : '12/01/2024 06:56:06'
+
+                }
+            ]
+        }
+        update_file(default_data)
+        data = read_file()
+    return data
+
+def main():    
+    argumentList = sys.argv[1:]
+    action = argumentList[0]
+    match action.lower():
+        case "add":
+            add(argumentList[1:])
+        case "update":
+            update(argumentList[1:])
+        case "delete":
+            update(argumentList[1:], "delete")
+        case "mark-in-progress":
+            update(argumentList[1:], "in-progress")
+        case "mark-done":
+            update(argumentList[1:], "done")
+        case "list":
+            list_task(argumentList[1:])                
+        case _:
+            print("Invalid action")
+
+main()
